@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// 0x96AFEFC0B3a85c60E43FF252c2Ec08e4D21ac1bc
+// 0xE17b68560D745ca0CcF676286f655C5b3F9CC62d
 
 pragma solidity ^0.8.0;
 
@@ -45,6 +45,10 @@ contract KingOfTheHill {
         require(msg.value >= _seed, "KingOfTheHill : Must pay at leat seed value.");
         _;
     }
+    modifier onlyPotOwner() {
+        require(msg.sender == _potOwner, "KingOfTheHill : You do not onw the pot.");
+        _;
+    }
     modifier notPotOwner() {
         require(msg.sender != _potOwner, "KingOfTheHill : You already onw the pot.");
         _;
@@ -63,11 +67,27 @@ contract KingOfTheHill {
         _blockNumber = blockNumber_; 
         emit BlockNumberUpdated(msg.sender, blockNumber_);
     }
-    
-    function seed() external enoughSeed notPotOwner payable {
-        
+
+    function didWin() internal view returns(bool) {
         // @dev condition to declare last pot owner winner
         if (block.number >= _seedBlock + _blockNumber) {
+            return true;
+        } else {
+            return false;
+            
+        }
+    }
+
+    function checkWin() public onlyPotOwner payable {
+        if (didWin()) {
+            payable(_potOwner).sendValue(address(this).balance * 80 / 100);
+            payable(_contractOwner).sendValue(address(this).balance * 10 / 100);
+            _seed = address(this).balance * 10 / 100;
+        }
+    }
+    
+    function seed() external enoughSeed notPotOwner payable {
+        if (didWin()) {
             payable(_potOwner).sendValue(address(this).balance * 80 / 100);
             payable(_contractOwner).sendValue(address(this).balance * 10 / 100);
             _seed = address(this).balance * 10 / 100;
